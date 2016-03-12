@@ -1,7 +1,14 @@
+{% load staticfiles %}
+{% load progress_bar %}
+
+
 <!DOCTYPE html>
 <html>
     <head>
         <meta charset="utf-8">
+        <script src="https://code.jquery.com/jquery-2.2.1.min.js"></script>
+        {% progress_bar_media %}
+
         <title>Minimal Django File Upload Example</title>
     </head>
 
@@ -19,7 +26,7 @@
 
         <!-- Upload form. Note enctype attribute! -->
         <form action="{% url "list" %}" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
+            
             <p>{{ form.non_field_errors }}</p>
 
             <p>{{ form.docfile.label_tag }} {{ form.docfile.help_text }}</p>
@@ -30,6 +37,7 @@
             </p>
 
             <p><input type="submit" value="Upload"/></p>
+            {% progress_bar %}
         </form>
     </body>
 

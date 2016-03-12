@@ -1,0 +1,203 @@
+{% load staticfiles %}
+{% load progress_bar %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>3D Point Cloud Portal</title>
+
+	<link rel="stylesheet" type="text/css" href="/static/myapp/src/viewer/potree.css">
+	<link rel="stylesheet" type="text/css" href="/static/myapp/libs/jquery-ui-1.11.4/jquery-ui.css">
+	<link rel="stylesheet" href="http://openlayers.org/en/v3.11.2/css/ol.css" type="text/css">
+	{% progress_bar_media %}
+  </head>
+
+  <body>
+  
+	<script src="/static/myapp/libs/jquery-2.1.4/jquery-2.1.4.min.js"></script>
+	<script src="/static/myapp/libs/jquery-ui-1.11.4/jquery-ui.min.js"></script>
+	<script src="/static/myapp/libs/jquery-ui-1.11.4/jquery.fileupload.css"></script>
+	<script src="/static/myapp/libs/three.js/build/three.js"></script>
+	<script src="/static/myapp/libs/other/stats.min.js"></script>
+	<script src="/static/myapp/libs/other/BinaryHeap.js"></script>
+	<script src="/static/myapp/libs/tween/tween.min.js"></script>
+	<script src="/static/myapp/libs/d3/d3.js"></script>
+	<script src="/static/myapp/build/potree/potree.js"></script>
+	
+	<!-- uncomment this to debug individual js files -->
+	<!--
+	<script src="../src/viewer/viewer.js"></script>
+	<script src="../src/viewer/profile.js"></script>
+	<script src="../src/viewer/ProgressBar.js"></script>
+	<script src="../src/PointCloudOctree.js"></script>
+	<script src="../src/PointCloudOctreeGeometry.js"></script>
+	<script src="../src/loader/POCLoader.js"></script>
+	<script src="../src/loader/BinaryLoader.js"></script>
+	<script src="../src/loader/LasLazLoader.js"></script>
+	<script src="../src/materials/PointCloudMaterial.js"></script>
+	<script src="../src/materials/EyeDomeLightingMaterial.js"></script>
+	<script src="../src/EarthControls.js"></script>
+	<script src="../src/OrbitControls.js"></script>
+	<script src="../src/FirstPersonControls.js"></script>
+	<script src="../src/GeoControls.js"></script>
+	<script src="../src/utils/ProfileTool.js"></script>
+	<script src="../src/utils/MeasuringTool.js"></script>
+	<script src="../src/utils/TransformationTool.js"></script>
+	<script src="../src/utils/VolumeTool.js"></script>
+	<script src="../src/utils.js"></script>
+	<script src="../src/LRU.js"></script>
+	<script src="../src/Annotation.js"></script>
+	<script src="../src/TextSprite.js"></script>
+	<script src="../src/Features.js"></script>
+	<script src="../src/extensions/PerspectiveCamera.js"></script>
+	<script src="../src/arena4d/PointCloudArena4D.js"></script>
+	<script src="../src/arena4d/PointCloudArena4DGeometry.js"></script>
+	-->
+	
+	
+	
+	<!-- INCLUDE ADDITIONAL DEPENDENCIES HERE -->
+	<!-- INCLUDE SETTINGS HERE -->
+	<script src="/static/myapp/libs/plasio/js/laslaz.js"></script>
+	<script src="/static/myapp/libs/plasio/vendor/bluebird.js"></script>
+	<script src="/static/myapp/build/potree/laslaz.js"></script>
+	
+	
+	<script src="http://openlayers.org/en/v3.11.2/build/ol-debug.js"></script>
+	<script src="/static/myapp/libs/proj4/proj4.js"></script>
+	<script src="/static/myapp/src/viewer/map.js"></script>
+	<div class="header">
+		<div class="heading">
+			<div class="inner">
+				<span>
+		 			<h2 style="color: white;text-align: center;margin-top: 0px;">3D Point Cloud Viewer</h1>
+		 		<span>
+	 		</div>
+	 	</div>
+	 	<div class="buttons">
+	 		<div class="btn">
+				<form id="fileupload" action="http://127.0.0.1:8000/myapp/list/" method="POST" enctype="multipart/form-data">
+				    <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
+				    <div class="fileupload-buttonbar">
+				            <!-- The fileinput-button span is used to style the file input field as button -->
+				            {% progress_bar %}
+				            <input type="file" name="docfile">
+				            <button type="submit" class="start">Start upload</button>
+				            <!--<button type="reset" class="cancel">Cancel upload</button>
+				            <button type="button" class="delete">Delete</button>-->
+				            <!-- The global file processing state -->
+				            
+
+				        <!-- The global progress state -->
+				        <div class="fileupload-progress fade" style="display:none">
+				            <!-- The global progress bar -->
+				            <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+				            <!-- The extended global progress state -->
+				            <div class="progress-extended">&nbsp;</div>
+				        </div>
+				    </div>
+				</form>	 	
+			</div>
+		</div>
+	</div>
+    <div class="potree_container" style="position: absolute; width: 100%; height: 100%; left: 0px; top: 80px; " >
+	
+		<div id="potree_render_area">
+			
+			<img class="potree_menu_toggle" src="/static/myapp/resources/icons/menu_button.svg" onclick="viewer.toggleSidebar()" />
+			<img id="potree_map_toggle" src="/static/myapp/resources/icons/map_icon.png" onclick="viewer.toggleMap()" style="display: none"/>
+			
+			<div id="potree_map" class="mapBox" style="position: absolute; left: 50px; top: 50px; width: 400px; height: 400px; display: none">
+				<div id="potree_map_header" style="position: absolute; width: 100%; height: 25px; top: 0px; background-color: rgba(0,0,0,0.5); z-index: 1000; border-top-left-radius: 3px; border-top-right-radius: 3px;">
+				</div>
+				<div id="potree_map_content" class="map" style="position: absolute; z-index: 100; top: 25px; width: 100%; height: calc(100% - 25px); border: 2px solid rgba(0,0,0,0.5); box-sizing: border-box;"></div>
+			</div>
+		
+			<!-- HEADING -->
+			<div id="potree_description" class="potree_info_text"></div>
+		</div>
+		
+		<div id="potree_sidebar_container"> </div>
+    </div>
+	
+	<script>
+
+	
+		var onPointCloudLoaded = function(event){
+			// do stuff here that should be executed whenever a point cloud has been loaded.
+			// event.pointcloud returns the point cloud object
+			$("form#fileupload").submit(function(e){
+
+			var formData = new FormData($(this)[0]);
+			available = $(this)[0];
+			$.ajax({
+			    url: "http://127.0.0.1:8000/myapp/list/",
+			    type: 'POST',
+			    data: formData,
+			    async: false,
+			    success: function (data) {
+			    	console.log(data);
+			    	
+			    	viewer.addPointCloud(data);
+			        
+			    },
+			    cache: false,
+			    contentType: false,
+			    processData: false
+			});
+
+			return false;
+			});
+
+			console.log("a point cloud has been loaded");
+		}; 
+	
+		viewer = new Potree.Viewer(document.getElementById("potree_render_area"), {
+			"onPointCloudLoaded": onPointCloudLoaded
+		});
+		
+		viewer.setEDLEnabled(false);
+		viewer.setPointSize(3);
+		viewer.setMaterial("RGB");
+		viewer.setFOV(60);
+		viewer.setPointSizing("Fixed");
+		viewer.setQuality("Squares");
+		viewer.setPointBudget(1*1000*1000);
+		//viewer.setOpacity(0.03);
+		viewer.setDescription(""
+		);
+		//viewer.setMinNodeSize(5);
+
+		viewer.addPointCloud("/static/myapp/resources/pointclouds/lion_takanawa/cloud.js", function(pointcloud){
+			viewer.addAnnotation(new THREE.Vector3(-0.14, 4.9, 0.25), {
+				"cameraTarget": new THREE.Vector3(0, 2, 0),
+				"cameraPosition": new THREE.Vector3(7.34, 3.24, 6.35),
+				"title": "Lion",
+				"description": "A chinese guardian lion (<a href='https://en.wikipedia.org/wiki/Chinese_guardian_lions' target='_blank'>Wikipedia</a>)"
+			});
+			
+			viewer.addAnnotation(new THREE.Vector3(-0.09, 4.13, 1.5), {
+				"cameraTarget": new THREE.Vector3(-0.09, 3.9, 1),
+				"cameraPosition": new THREE.Vector3(0.74, 4.23, 3)
+			});
+			
+			viewer.addAnnotation(new THREE.Vector3(0.46, 2.2, 1.07), {
+				"cameraTarget": new THREE.Vector3(0.46, 2.2, 1.07),
+				"cameraPosition": new THREE.Vector3(1.63, 3.27, 2.32),
+				"description": "Female guardian lions have a cub under their left paw." + 
+					"<br><br><center><a href='https://commons.wikimedia.org/wiki/File:Beijing_Forbidden_City_Imperial_Guardian_Lions.jpg' target='blank'>" + 
+					"<img src='https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Beijing_Forbidden_City_Imperial_Guardian_Lions.jpg/450px-Beijing_Forbidden_City_Imperial_Guardian_Lions.jpg' width='200px'/>" +
+					"</a></center>"
+			});
+		});
+		
+		viewer.loadGUI();
+		
+	</script>
+  </body>
+</html>
